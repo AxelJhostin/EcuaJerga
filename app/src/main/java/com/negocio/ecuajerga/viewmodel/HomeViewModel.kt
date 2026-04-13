@@ -35,21 +35,25 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         val res = context.resources
         val pkg = context.packageName
 
-        // Elige variante aleatoria entre las disponibles
         val variant = (1..word.audioCount).random()
         val resName = "${word.id}_$variant"
         val resId = res.getIdentifier(resName, "raw", pkg)
 
-        if (resId == 0) return // archivo no existe aún, no hace nada
+        if (resId == 0) return
 
-        // Detiene el audio anterior si aún está sonando
-        currentPlayer?.apply {
-            if (isPlaying) stop()
-            release()
+        // Libera el player anterior de forma segura
+        try {
+            currentPlayer?.release()
+        } catch (e: Exception) {
+            // ignorar
         }
+        currentPlayer = null
 
         currentPlayer = MediaPlayer.create(context, resId)?.apply {
-            setOnCompletionListener { release() }
+            setOnCompletionListener {
+                it.release()
+                currentPlayer = null
+            }
             start()
         }
     }
